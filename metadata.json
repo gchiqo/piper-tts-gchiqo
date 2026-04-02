@@ -1,0 +1,9 @@
+{
+  "name": "Text to Speech — Piper Reader",
+  "description": "Speak selected text using Piper neural TTS. Select any text, press Shift+Super+A (configurable) and it reads it aloud. Natural-sounding offline voices via Piper. Panel icon shows idle / thinking / speaking state. Full settings: voice picker, speed, expressiveness, custom shortcut.",
+  "uuid": "piper-tts@gchiqo",
+  "version": 1,
+  "shell-version": ["45", "46", "47", "48"],
+  "settings-schema": "org.gnome.shell.extensions.piper-tts",
+  "url": "https://github.com/gchiqo/gnome-piper-tts"
+}

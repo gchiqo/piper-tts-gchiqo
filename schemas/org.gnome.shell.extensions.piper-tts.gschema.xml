@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.piper-tts"
+          path="/org.gnome.shell.extensions.piper-tts/">
+
+    <key name="piper-bin" type="s">
+      <default>'~/piper/piper/piper'</default>
+      <summary>Path to Piper binary</summary>
+    </key>
+
+    <key name="voice-path" type="s">
+      <default>'~/piper/voices/en_US-lessac-high.onnx'</default>
+      <summary>Active voice model (.onnx path)</summary>
+    </key>
+
+    <key name="voices-dir" type="s">
+      <default>'~/piper/voices'</default>
+      <summary>Directory containing .onnx voice files</summary>
+    </key>
+
+    <key name="speed" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Speaking speed (1.0 = normal)</summary>
+    </key>
+
+    <key name="noise-scale" type="d">
+      <default>0.667</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Voice expressiveness / variation</summary>
+    </key>
+
+    <key name="noise-w" type="d">
+      <default>0.8</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Phoneme duration variation</summary>
+    </key>
+
+    <key name="shortcut" type="as">
+      <default><![CDATA[['<Shift><Super>a']]]></default>
+      <summary>Keyboard shortcut to speak selected text</summary>
+    </key>
+
+    <key name="engine" type="s">
+      <default>'piper'</default>
+      <summary>TTS engine: piper or espeak</summary>
+    </key>
+
+    <key name="espeak-voice" type="s">
+      <default>'en-us'</default>
+      <summary>espeak-ng voice</summary>
+    </key>
+
+    <key name="espeak-speed" type="i">
+      <default>200</default>
+      <range min="80" max="450"/>
+      <summary>espeak speed in words per minute</summary>
+    </key>
+
+    <key name="espeak-pitch" type="i">
+      <default>55</default>
+      <range min="0" max="99"/>
+      <summary>espeak pitch</summary>
+    </key>
+
+  </schema>
+</schemalist>
