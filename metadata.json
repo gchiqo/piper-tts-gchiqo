@@ -5,5 +5,5 @@
   "version": 1,
   "shell-version": ["45", "46", "47", "48"],
   "settings-schema": "org.gnome.shell.extensions.piper-tts",
-  "url": "https://github.com/gchiqo/gnome-piper-tts"
+  "url": "https://github.com/gchiqo/piper-tts-gchiqo"
 }

@@ -139,8 +139,8 @@ export default class TTSPrefs extends ExtensionPreferences {
 
         speedGroup.add(this._makeScaleRow(
             _('Speaking speed'),
-            _('0.5 = slow · 1.0 = normal · 2.0 = fast'),
-            s, 'speed', 0.5, 2.0, 0.05
+            _('0.5 = slow · 1.0 = normal · 2.0 = fast · 4.0 = turbo'),
+            s, 'speed', 0.5, 4.0, 0.05
         ));
 
         speedGroup.add(this._makeScaleRow(

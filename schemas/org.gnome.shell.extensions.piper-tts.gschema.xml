@@ -20,7 +20,7 @@
 
     <key name="speed" type="d">
       <default>1.0</default>
-      <range min="0.5" max="2.0"/>
+      <range min="0.5" max="4.0"/>
       <summary>Speaking speed (1.0 = normal)</summary>
     </key>
 
