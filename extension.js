@@ -5,6 +5,7 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -147,10 +148,42 @@ export default class TTSExtension extends Extension {
         Main.wm.removeKeybinding('shortcut');
     }
 
-    _speak() {
-        const s = this._settings;
+    _notify(summary, body) {
+        try {
+            const source = MessageTray.getSystemSource
+                ? MessageTray.getSystemSource()
+                : new MessageTray.Source({ title: 'Piper TTS' });
+            const NotificationCtor = MessageTray.Notification;
+            const notification = new NotificationCtor({
+                source,
+                title: summary,
+                body,
+                isTransient: true,
+            });
+            source.addNotification
+                ? source.addNotification(notification)
+                : Main.messageTray.add(source);
+            if (source.showNotification) source.showNotification(notification);
+        } catch (e) {
+            log(`[piper-tts] ${summary}: ${body}`);
+        }
+    }
 
-        // resolve ~ paths
+    _speak() {
+        const clipboard = St.Clipboard.get_default();
+        clipboard.get_text(St.ClipboardType.PRIMARY, (_clip, text) => {
+            const trimmed = (text ?? '').trim();
+            if (!trimmed) {
+                this._notify('Piper TTS', 'No text selected');
+                GLib.file_set_contents('/tmp/tts-state', 'idle');
+                return;
+            }
+            this._runTTS(trimmed);
+        });
+    }
+
+    _runTTS(text) {
+        const s = this._settings;
         const expand = p => p.replace(/^~/, GLib.get_home_dir());
 
         const engine     = s.get_string('engine');
@@ -163,33 +196,36 @@ export default class TTSExtension extends Extension {
         const espSpeed   = s.get_int('espeak-speed');
         const espPitch   = s.get_int('espeak-pitch');
 
-        // length-scale = 1/speed
         const lengthScale = (1.0 / speed).toFixed(3);
 
         const script = `
-set -e
 STATE=/tmp/tts-state
 PID_FILE=/tmp/tts-pid
 
+cleanup() {
+  rm -f "$PID_FILE"
+  echo idle > "$STATE"
+}
+trap cleanup EXIT INT TERM
+
 # kill existing
-[ -f "$PID_FILE" ] && kill "$(cat $PID_FILE)" 2>/dev/null; rm -f "$PID_FILE"
+if [ -f "$PID_FILE" ]; then
+  kill "$(cat "$PID_FILE")" 2>/dev/null
+  rm -f "$PID_FILE"
+fi
 
 echo thinking > "$STATE"
 
-# get primary selection
-TEXT="$(wl-paste --primary --no-newline 2>/dev/null)"
-if [ -z "$TEXT" ]; then
-  notify-send "TTS" "No text selected" --icon=audio-volume-muted
-  echo idle > "$STATE"
+if [ -z "$TTS_TEXT" ]; then
   exit 0
 fi
 
-SHORT="$(echo "$TEXT" | head -c 80)"
-echo "speaking:$SHORT" > "$STATE"
+SHORT="$(printf '%s' "$TTS_TEXT" | head -c 80)"
+printf 'speaking:%s\\n' "$SHORT" > "$STATE"
 
 ENGINE="${engine}"
 if [ "$ENGINE" = "piper" ] && [ -x "${piperBin}" ] && [ -f "${voicePath}" ]; then
-  echo "$TEXT" | "${piperBin}" \\
+  printf '%s' "$TTS_TEXT" | "${piperBin}" \\
     --model "${voicePath}" \\
     --length-scale ${lengthScale} \\
     --noise-scale ${noise} \\
@@ -197,19 +233,24 @@ if [ "$ENGINE" = "piper" ] && [ -x "${piperBin}" ] && [ -f "${voicePath}" ]; the
     --output-raw 2>/dev/null \\
   | aplay -r 22050 -f S16_LE -t raw - 2>/dev/null &
 else
-  espeak-ng -v "${espVoice}" -s ${espSpeed} -p ${espPitch} -- "$TEXT" &
+  espeak-ng -v "${espVoice}" -s ${espSpeed} -p ${espPitch} -- "$TTS_TEXT" &
 fi
 
-echo $! > "$PID_FILE"
-wait $!
-rm -f "$PID_FILE"
-echo idle > "$STATE"
+PID=$!
+echo $PID > "$PID_FILE"
+wait $PID
 `.trim();
 
         try {
-            GLib.spawn_command_line_async(`bash -c '${script.replace(/'/g, `'"'"'`)}'`);
+            const [, argv] = GLib.shell_parse_argv('bash -c ' + GLib.shell_quote(script));
+            const launcher = new Gio.SubprocessLauncher({
+                flags: Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
+            });
+            launcher.setenv('TTS_TEXT', text, true);
+            launcher.spawnv(argv);
         } catch(e) {
             logError(e, 'TTS speak failed');
+            GLib.file_set_contents('/tmp/tts-state', 'idle');
         }
     }
 }
